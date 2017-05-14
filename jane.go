@@ -70,8 +70,11 @@ func sendToMail(to, subject, body, mailtype string) error {
 }
 
 func SendEmail() {
-      sub := "亲爱的，化合物跑完了"
+      sub := "亲爱的，化合物分析结束了"
       content := os.Args[1] + "目录下的化合物跑完了"
+      if os.Args[2] == "no" {
+          return
+      }
       err := sendToMail(os.Args[2], sub, content, "html")
       if err != nil {
           log.Println("send email failed")
