@@ -54,30 +54,28 @@ func fileSize(fileName string) int64 {
     return fi.Size()
 }
 
+func sendToMail(to, subject, body, mailtype string) error {
+      host := "smtp.qq.com:25"
+      auth := smtp.PlainAuth("", "1312980813@qq.com", "vrbmhtvhuiavbach", "smtp.qq.com")
+      var content_type string
+      if mailtype == "html" {
+            content_type = "Content-Type:text/" + mailtype + ";charset=UTF-8"
+      } else {
+            content_type = "Content-Type:text/plain" + ";charset=UTF-8"
+      }
+
+      msg := []byte("Subject:"+ subject + "\r\n" + content_type + "\r\n\r\n" + body)
+      err := smtp.SendMail(host, auth, "1312980813@qq.com", []string{to}, msg)
+      return err
+}
+
 func SendEmail() {
       sub := "亲爱的，化合物跑完了"
       content := os.Args[1] + "目录下的化合物跑完了"
-      mailList := []string{os.Args[2]}
-      auth := smtp.PlainAuth(
-              "",
-              "1312980813@qq.com",
-              "21131P13njcit",
-              "smtp.qq.com",
-              //"smtp.gmail.com",
-        )
-        // Connect to the server, authenticate, set the sender and recipient,
-        // and send the email all in one step.
-        err := smtp.SendMail(
-                "smtp.qq.com:25",
-                auth,
-                "1312980813@qq.com",
-                mailList,
-                []byte(sub+content),
-        )
-        if err != nil {
-                log.Println("send email failed")
-        }
-
+      err := sendToMail(os.Args[2], sub, content, "html")
+      if err != nil {
+          log.Println("send email failed")
+      }
 }
 
 func (self monitor) Do() {
@@ -99,11 +97,11 @@ func (self monitor) Do() {
                     continue
                 }
                 if w.IsCreate() {
+                    log.Println(w.Name, "is created filesize is:", fileSize(w.Name))
                     if strings.HasSuffix(w.Name, ".html") {
                        log.Println("化合物生成结束")
                        SendEmail()
                     }
-                    log.Println(w.Name, "is created filesize is:", fileSize(w.Name))
                     continue
                 }
             case err := <-self.watch.Error:
