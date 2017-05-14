@@ -12,11 +12,11 @@ type monitor struct {
 
 func main() {
     if len(os.Args) < 2 {
-        log.Println("no dir param to watch")
+        log.Println("no file param to watch")
         os.Exit(1)
     }
-    dirName := os.Args[1]
-    _,err := os.Stat(dirName)
+    fileName := os.Args[1]
+    _,err := os.Stat(fileName)
     if err != nil {
         log.Println("open stram failed")
         os.Exit(1)
@@ -27,7 +27,7 @@ func main() {
         return
     }
     M.Do()
-    M.watch.Watch(dirName)
+    M.watch.Watch(fileName)
     select {}
 }
 
@@ -36,18 +36,18 @@ func NewMonitor() (monitor, error) {
     return monitor{Mon}, err
 }
 
-func fileSize(fileName string) {
+func fileSize(fileName string) int64 {
     fi, err := os.Stat(fileName)
 
     if err != nil {
-
         if os.IsNotExist(err) {
             log.Println("file not exist")
         }
-        return
+
+        return 0
     }
 
-    log.Println(fi.Size)
+    return fi.Size()
 }
 
 func (self monitor) Do() {
@@ -55,20 +55,22 @@ func (self monitor) Do() {
         for {
             select {
             case w := <-self.watch.Event:
-                log.Println(w)
                 if w.IsModify() {
-                    fileSize(w.Name)
+                    log.Println(w.Name, "is changed, filesize is:",fileSize(w.Name))
                     continue
                 }
                 if w.IsDelete() {
-                    log.Println("文件", w.Name, "被删除.")
+                    log.Println(w.Name, "is deleted")
                     continue
                 }
                 if w.IsRename() {
-                    w = <-self.watch.Event
-                    log.Println(w)
+                    log.Println(w.Name, "is renamed")
                     self.watch.RemoveWatch(w.Name)
-                    log.Println(w.Name, " 被重命名.")
+                    continue
+                }
+                if w.IsCreate() {
+                    log.Println(w.Name, "is created filesize is:", fileSize(w.Name))
+                    continue
                 }
             case err := <-self.watch.Error:
                 log.Fatalln(err)
