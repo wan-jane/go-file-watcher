@@ -16,14 +16,9 @@ func main() {
         os.Exit(1)
     }
     dirName := os.Args[1]
-    fi,err := os.Stat(dirName)
+    _,err := os.Stat(dirName)
     if err != nil {
         log.Println("open stram failed")
-        os.Exit(1)
-    }
-
-    if !fi.IsDir() {
-        log.Println("dir:", dirName , "not exist")
         os.Exit(1)
     }
     M, err := NewMonitor()
