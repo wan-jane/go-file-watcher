@@ -78,7 +78,10 @@ func SendEmail(fileName string) {
 	err := sendToMail(os.Args[2], sub, content, "html")
 	if err != nil {
 		log.Println("send email failed")
+        return
 	}
+
+    log.Println("邮件已发送")
 }
 
 func (self monitor) Do() {
