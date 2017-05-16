@@ -7,6 +7,7 @@ import (
 	"net/smtp"
 	"os"
 	"strings"
+	"encoding/base64"
 )
 
 type monitor struct {
@@ -57,14 +58,15 @@ func fileSize(fileName string) int64 {
 func sendToMail(to, subject, body, mailtype string) error {
 	host := "smtp.qq.com:25"
 	auth := smtp.PlainAuth("", "1312980813@qq.com", "vrbmhtvhuiavbach", "smtp.qq.com")
-	var content_type string
+	var content_type string = "MIME-Version: 1.0\r\n"
+	subject = "=?UTF-8?B?" + base64.StdEncoding.EncodeToString([]byte(subject)) + "?="
 	if mailtype == "html" {
-		content_type = "Content-Type:text/" + mailtype + ";charset=UTF-8"
+		content_type = "Content-Type: text/" + mailtype + ";charset=UTF-8"
 	} else {
-		content_type = "Content-Type:text/plain" + ";charset=UTF-8"
+		content_type = "Content-Type: text/plain" + ";charset=UTF-8"
 	}
-
-	msg := []byte("Subject:" + subject + "\r\n" + content_type + "\r\n\r\n" + body)
+    content_type = content_type + "Content-Transfer-Encoding: 8bit\r\n"
+	msg := []byte("To:" + to + "\r\n"+"Subject:" + subject + "\r\n" + content_type + "\r\n\r\n" + body)
 	err := smtp.SendMail(host, auth, "1312980813@qq.com", []string{to}, msg)
 	return err
 }
