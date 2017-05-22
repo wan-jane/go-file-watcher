@@ -7,12 +7,28 @@ import (
 	"os"
 	"strings"
 	"encoding/base64"
-	"path"
+	"errors"
 )
+
+var watchPaths []string
+
+type JaneWatcher struct {
+	watch *fsnotify.Watcher
+}
 
 func main() {
 	watchRoot()
 	select {}
+}
+
+func newJaneWatcher() (*JaneWatcher, error) {
+	Watcher, err := fsnotify.NewWatcher()
+	if err != nil {
+		log.Println(err)
+		return nil, errors.New("can not init !")
+	}
+
+	return &JaneWatcher{Watcher}, nil
 }
 
 func watchRoot() {
@@ -28,16 +44,15 @@ func startWatch(dir string)  {
 	_, err := os.Stat(dir)
 	if err != nil {
 		log.Println("open stream " + dir + " failed")
-		return
+		os.Exit(1)
 	}
-	Watcher, err := fsnotify.NewWatcher()
-
+	janeW, err:= newJaneWatcher()
 	if err != nil {
 		log.Println(err)
 		return
 	}
-	go listen(Watcher)
-	Watcher.Watch(dir)
+	go janeW.listen()
+	janeW.watch.WatchFlags(dir, fsnotify.FSN_CREATE)
 }
 
 func sendToMail(to, subject, body, mailtype string) error {
@@ -59,7 +74,11 @@ func sendToMail(to, subject, body, mailtype string) error {
 func SendEmail(fileName string) {
 	sub := "亲爱的，化合物分析结束了"
 	content := "已经生成了" + fileName + "文件"
-	err := sendToMail("fltcsong@163.com", sub, content, "html")
+	email := "fltcsong@163.com"
+	if len(os.Args) > 2 {
+		email = os.Args[2]
+	}
+	err := sendToMail(email, sub, content, "html")
 	if err != nil {
 		log.Println("send email failed")
         	return
@@ -77,26 +96,46 @@ func isDir(pathname string) bool {
 	return fi.IsDir()
 }
 
-func listen(self *fsnotify.Watcher) {
+func (jw *JaneWatcher) listen() {
 	for {
 		select {
-		case w := <-self.Event:
+		case w := <-jw.watch.Event:
 			log.Println(w)
 			if w.IsCreate() {
-				if strings.HasSuffix(strings.ToLower(w.Name), ".htm") && strings.Contains(strings.ToLower(w.Name), "output") {
+				if strings.Contains(strings.ToLower(w.Name), "output") && strings.HasSuffix(strings.ToLower(w.Name), "report.htm") {
 					log.Println("化合物生成结束")
 					SendEmail(w.Name)
-					self.RemoveWatch(path.Dir(w.Name))
-					break
+					jw.removeAllChildWatch()
+					continue
 				}
 
 				if isDir(w.Name) {
 					log.Println("add watch on ", w.Name, " ...")
-					self.Watch(w.Name)
+					jw.watch.WatchFlags(w.Name, fsnotify.FSN_CREATE)
+					watchPaths = append(watchPaths, w.Name)
+					printWatchers()
 				}
 			}
-		case err := <-self.Error:
+		case err := <-jw.watch.Error:
 			log.Fatalln(err)
 		}
 	}
+}
+
+func (jw *JaneWatcher) removeAllChildWatch() {
+	for _, path := range watchPaths {
+		jw.watch.RemoveWatch(path)
+	}
+
+	log.Println("remove all child watch ...")
+	watchPaths = []string{}
+	printWatchers()
+}
+
+func printWatchers() {
+	log.Println("--------已监听子目录---------")
+	for _, path := range watchPaths {
+		log.Println(path)
+	}
+	log.Println("---------------------------")
 }
