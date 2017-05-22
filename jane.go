@@ -8,6 +8,8 @@ import (
 	"strings"
 	"encoding/base64"
 	"errors"
+	"strconv"
+	"time"
 )
 
 var watchPaths []string
@@ -17,8 +19,24 @@ type JaneWatcher struct {
 }
 
 func main() {
+	setLogOutput()
 	watchRoot()
 	select {}
+}
+
+func setLogOutput() {
+	filename := strconv.Itoa(time.Now().Year()) +
+		strconv.Itoa(time.Now().Month()) +
+		strconv.Itoa(time.Now().Day()) +
+		strconv.Itoa(time.Now().Hour()) +
+		strconv.Itoa(time.Now().Minute()) +
+		strconv.Itoa(time.Now().Second())
+	f, err := os.OpenFile(filename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
+	if err != nil {
+		return
+	}
+	defer f.Close()
+	log.SetOutput(f)
 }
 
 func newJaneWatcher() (*JaneWatcher, error) {
