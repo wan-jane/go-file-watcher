@@ -8,7 +8,6 @@ import (
 	"strings"
 	"encoding/base64"
 	"errors"
-	"strconv"
 	"time"
 	"sync"
 )
@@ -21,23 +20,18 @@ type JaneWatcher struct {
 }
 
 func main() {
-	setLogOutput()
 	watchRoot()
 	select {}
 }
 
 func setLogOutput() {
-	filename := strconv.Itoa(time.Now().Year()) +
-		strconv.Itoa(time.Now().Month()) +
-		strconv.Itoa(time.Now().Day()) +
-		strconv.Itoa(time.Now().Hour()) +
-		strconv.Itoa(time.Now().Minute()) +
-		strconv.Itoa(time.Now().Second())
+
+	filename := time.Now().Format("2006_01_02_15_04") + ".log.txt"
 	f, err := os.OpenFile(filename, os.O_RDWR | os.O_CREATE | os.O_APPEND, 0666)
 	if err != nil {
 		return
 	}
-	defer f.Close()
+	//defer f.Close()
 	log.SetOutput(f)
 }
 
