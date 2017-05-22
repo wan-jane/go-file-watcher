@@ -1,7 +1,7 @@
 set WS=CreateObject("WScript.Shell")
 for each ps in GetObject("winmgmts:\\.\root\cimv2:win32_process").instances_
 if ps.name ="jane.exe" then
-    WS.popup "jane.exe 已经在运行了",1,"提示",4144
+    WS.popup "程序已经在运行了",1,"提示",4144
     WScript.quit
 end if
 
