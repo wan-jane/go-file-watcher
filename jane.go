@@ -10,8 +10,10 @@ import (
 	"errors"
 	"strconv"
 	"time"
+	"sync"
 )
 
+var mutex sync.Mutex
 var watchPaths []string
 
 type JaneWatcher struct {
@@ -50,7 +52,7 @@ func newJaneWatcher() (*JaneWatcher, error) {
 }
 
 func watchRoot() {
-	rootDir := "/Users/xnw/gopath/src/go-file-watcher/test"
+	rootDir := "E:\\job"
 	if len(os.Args) > 1 {
 		rootDir = os.Args[1]
 	}
@@ -122,12 +124,14 @@ func (jw *JaneWatcher) listen() {
 			if w.IsCreate() {
 				if strings.Contains(strings.ToLower(w.Name), "output") && strings.HasSuffix(strings.ToLower(w.Name), "report.htm") {
 					log.Println("化合物生成结束")
+					mutex.Lock()
 					SendEmail(w.Name)
 					jw.removeAllChildWatch()
+					mutex.Unlock()
 					continue
 				}
 
-				if isDir(w.Name) {
+				if isDir(w.Name) && strings.HasPrefix(strings.ToLower(w.Name), "e:\\job\\dockligands") {
 					log.Println("add watch on ", w.Name, " ...")
 					jw.watch.WatchFlags(w.Name, fsnotify.FSN_CREATE)
 					watchPaths = append(watchPaths, w.Name)
